@@ -1,12 +1,32 @@
-version: "3.9"
+version: '3.9'
 
 services:
+  auth_db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Siz lokalda 5433 port orqali ulanasiz
+
   auth_service:
-    build: ./auth_service
-    container_name: auth_service
+    build:
+      context: ./auth_service
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./auth_service:/app
     ports:
       - "8000:8000"
-    working_dir: /app
-    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - auth_db
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+      - DATABASE_URL=postgres://postgres:postgres@auth_db:5432/auth_db
+
+volumes:
+  auth_postgres_data:
