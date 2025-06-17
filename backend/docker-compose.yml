@@ -11,7 +11,7 @@ services:
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"  # Siz lokalda 5433 port orqali ulanasiz
+      - "5433:5432"
 
   auth_service:
     build:
@@ -28,5 +28,33 @@ services:
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
       - DATABASE_URL=postgres://postgres:postgres@auth_db:5432/auth_db
 
+  challenge_db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_DB: challenge_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - challenge_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+
+  challenge_service:
+    build:
+      context: ./challenge_service
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - ./challenge_service:/app
+    ports:
+      - "8001:8000"
+    depends_on:
+      - challenge_db
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+      - DATABASE_URL=postgres://postgres:postgres@challenge_db:5432/challenge_service_db
+
 volumes:
   auth_postgres_data:
+  challenge_postgres_data:
